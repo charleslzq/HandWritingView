@@ -1,0 +1,61 @@
+ext {
+    versions = [
+            sdk : [
+                    min: 15,
+                    target: 28
+            ],
+            kotlin: '1.2.51',
+            rx: [
+                    java: '2.1.9',
+                    android: '2.0.1'
+            ],
+            support: [
+                    core: '28.0.0-alpha3',
+                    constraintLayout: '1.1.2'
+            ],
+            buildTool: '3.+',
+            butterKnife: '8.8.1',
+            test: [
+                    junit: '4.12',
+                    support: [
+                            runner: '1.0.1',
+                            rules: '0.5',
+                            espresso: [
+                                    core: '3.0.1',
+                                    contrib: '2.2.1'
+                            ]
+                    ]
+            ]
+    ]
+    deps = [
+            kotlin: [
+                    lib: "org.jetbrains.kotlin:kotlin-stdlib-jdk7:${versions.kotlin}",
+                    gradlePlugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:${versions.kotlin}"
+            ],
+            rx: [
+                    java: "io.reactivex.rxjava2:rxjava:${versions.rx.java}",
+                    android: "io.reactivex.rxjava2:rxandroid:${versions.rx.android}"
+            ],
+            support: [
+                    compat: "com.android.support:support-compat:${versions.support.core}",
+                    appCompat: "com.android.support:appcompat-v7:${versions.support.core}",
+                    constraintLayout: "com.android.support.constraint:constraint-layout:${versions.support.constraintLayout}"
+            ],
+            butterKnife: [
+                    core: "com.jakewharton:butterknife:${versions.butterKnife}",
+                    compiler: "com.jakewharton:butterknife-compiler:${versions.butterKnife}"
+            ],
+            buildTool: "com.android.tools.build:gradle:${versions.buildTool}",
+            test: [
+                    junit: "junit:junit:${versions.test.junit}",
+                    support: [
+                            runner: "com.android.support.test:runner:${versions.test.support.runner}",
+                            rules: "com.android.support.test:rules:${versions.test.support.rules}",
+                            espresso: [
+                                    core: "com.android.support.test.espresso:espresso-core:${versions.test.support.espresso.core}",
+                                    contrib: "com.android.support.test.espresso:espresso-contrib:${versions.test.support.espresso.contrib}"
+                            ]
+                    ]
+            ]
+    ]
+}
