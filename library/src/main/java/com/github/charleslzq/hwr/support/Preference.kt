@@ -1,0 +1,48 @@
+package com.github.charleslzq.hwr.support
+
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.SharedPreferences
+import kotlin.reflect.KProperty
+
+class Preference<T>(
+        context: Context,
+        private val name: String,
+        private val default: T
+) {
+
+    private val sharedPreferences: SharedPreferences by lazy { context.getSharedPreferences(name, Context.MODE_PRIVATE) }
+
+    operator fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        return getSharedPreferences(name, default)
+    }
+
+    operator fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+        putSharedPreferences(name, value)
+    }
+
+    @SuppressLint("CommitPrefEdits")
+    private fun putSharedPreferences(name: String, value: T) = with(sharedPreferences.edit()) {
+        when (value) {
+            is Long -> putLong(name, value)
+            is String -> putString(name, value)
+            is Int -> putInt(name, value)
+            is Boolean -> putBoolean(name, value)
+            is Float -> putFloat(name, value)
+            else -> throw IllegalArgumentException("SharedPreferences can't be save this type")
+        }.apply()
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun getSharedPreferences(name: String, default: T): T = with(sharedPreferences) {
+        val res: Any = when (default) {
+            is Long -> getLong(name, default)
+            is String -> getString(name, default)
+            is Int -> getInt(name, default)
+            is Boolean -> getBoolean(name, default)
+            is Float -> getFloat(name, default)
+            else -> throw IllegalArgumentException("SharedPreferences can't be get this type")
+        }
+        return res as T
+    }
+}
