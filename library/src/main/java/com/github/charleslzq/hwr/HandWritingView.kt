@@ -3,6 +3,7 @@ package com.github.charleslzq.hwr
 import android.content.Context
 import android.graphics.*
 import android.util.AttributeSet
+import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
@@ -21,6 +22,7 @@ constructor(
     private val publisher = PublishSubject.create<List<Candidate>>()
     private val strokes = UndoSupport<Stroke>()
     private var currentStroke: Stroke? = null
+    val showAssociate = true
     val paint = Paint().apply {
         color = Color.BLACK
         strokeWidth = 3f
@@ -80,9 +82,13 @@ constructor(
         }
     }
 
-    @Throws(HciRecogFailException::class, HciSessionException::class)
     private fun recognize() {
-        publisher.onNext(HciHwrEngine.recognize(strokes.toShort()).toCandidates())
+        publisher.onNext(try {
+            HciHwrEngine.recognize(strokes.toShort()).toCandidates()
+        } catch (exception: HciException) {
+            Log.e(TAG, "error code: ${exception.errorCode}", exception)
+            emptyList<RecognizeCandidate>()
+        })
     }
 
     private fun UndoSupport<Stroke>.toShort() = doneList().toMutableList().apply {
@@ -91,8 +97,23 @@ constructor(
 
     private fun HwrRecogResult.toCandidates() = resultItemList.map {
         RecognizeCandidate(it.result) {
+            if (showAssociate) {
+                generateAssociates(it)
+            }
             reset()
         }
+    }
+
+    private fun generateAssociates(context: Pair<String, String>) {
+        val preText = (context.first + context.second).takeLast(3)
+        publisher.onNext(try {
+            HciHwrEngine.associate(preText).resultList.map {
+                AssociateCandidate(preText, it, this::generateAssociates)
+            }
+        } catch (exception: HciException) {
+            Log.e(TAG, "error code: ${exception.errorCode}", exception)
+            emptyList<AssociateCandidate>()
+        })
     }
 
     class Stroke {

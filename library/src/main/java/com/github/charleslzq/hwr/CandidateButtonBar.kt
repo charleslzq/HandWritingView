@@ -23,7 +23,6 @@ constructor(
             removeAllViewsInLayout()
             it.forEach {
                 CandidateButton(context, it) {
-                    removeAllViewsInLayout()
                     onSelect(it)
                 }.apply {
                     customButton(this)

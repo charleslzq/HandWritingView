@@ -56,7 +56,7 @@ object HciHwrEngine {
 
     fun associate(word: String) = workInSession(Configuration.Caps.ASSOCIATE) {
         HwrAssociateWordsResult().apply {
-            val errorCode = HciCloudHwr.hciHwrAssociateWords(it, word, "", this)
+            val errorCode = HciCloudHwr.hciHwrAssociateWords(it, "", word, this)
             if (errorCode != HciErrorCode.HCI_ERR_NONE) {
                 throw HciAssociateFailException(errorCode)
             }
