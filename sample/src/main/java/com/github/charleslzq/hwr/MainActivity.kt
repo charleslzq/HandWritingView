@@ -17,16 +17,21 @@ class MainActivity : AppCompatActivity() {
         hwrView.onResult {
             updateButtonState()
         }
-        resetButton.setOnClickListener {
-            hwrView.reset()
-            updateButtonState()
-        }
         undoButton.setOnClickListener {
             hwrView.undo()
             updateButtonState()
         }
         redoButton.setOnClickListener {
             hwrView.redo()
+            updateButtonState()
+        }
+        clearButton.setOnClickListener {
+            hwrView.reset()
+            updateButtonState()
+        }
+        resetButton.setOnClickListener {
+            text.text = ""
+            hwrView.reset()
             updateButtonState()
         }
     }
