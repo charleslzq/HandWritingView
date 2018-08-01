@@ -1,11 +1,11 @@
 package com.github.charleslzq.hwr
 
 import android.content.Context
-import android.graphics.Point
+import android.graphics.*
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
-import android.widget.FrameLayout
+import android.widget.ImageView
 import com.github.charleslzq.hwview.support.UndoSupport
 import com.sinovoice.hcicloudsdk.common.hwr.HwrRecogResult
 import io.reactivex.subjects.PublishSubject
@@ -17,16 +17,27 @@ constructor(
         context: Context,
         attributeSet: AttributeSet? = null,
         defStyle: Int = 0
-) : FrameLayout(context, attributeSet, defStyle) {
+) : ImageView(context, attributeSet, defStyle) {
     private val publisher = PublishSubject.create<HwrRecogResult>()
     private val strokes = UndoSupport<Stroke>()
+    private var currentStroke: Stroke? = null
+    val paint = Paint().apply {
+        color = Color.BLACK
+        strokeWidth = 3f
+        isAntiAlias = true
+        strokeJoin = Paint.Join.ROUND
+        style = Paint.Style.STROKE
+    }
 
     init {
-        setOnTouchListener(StrokeListener { stroke, finished ->
-            if (finished) {
-                strokes.done(stroke)
+        setOnTouchListener(StrokeListener {
+            currentStroke = it
+            if (it.finished) {
+                strokes.done(it)
+                currentStroke = null
                 recognize()
             }
+            invalidate()
         })
     }
 
@@ -38,6 +49,7 @@ constructor(
         if (canUndo()) {
             strokes.undo()
             recognize()
+            invalidate()
         }
     }
 
@@ -45,13 +57,27 @@ constructor(
         if (canRedo()) {
             strokes.redo()
             recognize()
+            invalidate()
         }
     }
 
-    fun reset() = strokes.reset()
+    fun reset() {
+        strokes.reset()
+        currentStroke = null
+        invalidate()
+    }
 
     fun subscribe(handler: (HwrRecogResult) -> Unit) {
         publisher.subscribe(handler)
+    }
+
+    override fun onDraw(canvas: Canvas) {
+        strokes.doneList().forEach {
+            canvas.drawPath(it.toPath(), paint)
+        }
+        currentStroke?.let {
+            canvas.drawPath(it.toPath(), paint)
+        }
     }
 
     @Throws(HciRecogFailException::class, HciSessionException::class)
@@ -65,9 +91,24 @@ constructor(
 
     class Stroke {
         val points = mutableListOf<Point>()
+        var finished = false
+            private set
 
-        fun addPoint(x: Int, y: Int) {
-            points.add(Point(x, y))
+        @JvmOverloads
+        fun addPoint(x: Int, y: Int, last: Boolean = false) {
+            if (!finished) {
+                points.add(Point(x, y))
+                if (last) {
+                    finished = true
+                }
+            }
+        }
+
+        fun toPath() = Path().apply {
+            moveTo(points[0].x.toFloat(), points[0].y.toFloat())
+            repeat(points.size - 1) {
+                lineTo(points[it + 1].x.toFloat(), points[it + 1].y.toFloat())
+            }
         }
 
         companion object {
@@ -79,7 +120,7 @@ constructor(
     }
 
     class StrokeListener(
-            val onStroke: (Stroke, Boolean) -> Unit
+            val onStroke: (Stroke) -> Unit
     ) : View.OnTouchListener {
         private var currentStroke = Stroke()
 
@@ -88,15 +129,15 @@ constructor(
                 MotionEvent.ACTION_DOWN -> {
                     currentStroke = Stroke()
                     currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt())
-                    onStroke(currentStroke, false)
+                    onStroke(currentStroke)
                 }
                 MotionEvent.ACTION_MOVE -> {
                     currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt())
-                    onStroke(currentStroke, false)
+                    onStroke(currentStroke)
                 }
                 MotionEvent.ACTION_UP -> {
-                    currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt())
-                    onStroke(currentStroke, true)
+                    currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt(), true)
+                    onStroke(currentStroke)
                 }
             }
             return true
