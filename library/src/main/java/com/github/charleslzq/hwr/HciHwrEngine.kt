@@ -1,7 +1,9 @@
 package com.github.charleslzq.hwr
 
 import android.content.Context
+import android.os.Environment
 import android.util.Log
+import com.github.charleslzq.hwr.support.Preference
 import com.sinovoice.hcicloudsdk.api.HciCloudSys
 import com.sinovoice.hcicloudsdk.api.hwr.HciCloudHwr
 import com.sinovoice.hcicloudsdk.common.AuthExpireTime
@@ -19,14 +21,15 @@ import java.util.*
 
 object HciHwrEngine {
     const val TAG = "HciHwrEngine"
-    private lateinit var configuration: HciHwrConfiguration
+    lateinit var configuration: Configuration
+        private set
 
     @JvmOverloads
     fun setup(context: Context,
               developerKey: String,
               appKey: String,
               additionalParams: MutableMap<String, String> = mutableMapOf()) {
-        configuration = HciHwrConfiguration(context, developerKey, appKey, additionalParams)
+        configuration = Configuration(context, developerKey, appKey, additionalParams)
         try {
             hciSysInit(context)
             checkAuthAndUpdateAuth()
@@ -42,7 +45,7 @@ object HciHwrEngine {
     }
 
     @Throws(HciRecogFailException::class, HciSessionException::class)
-    fun recognize(strokes: ShortArray) = workInSession(HciHwrConfiguration.Caps.FREE_STYLUS) {
+    fun recognize(strokes: ShortArray) = workInSession(Configuration.Caps.FREE_STYLUS) {
         HwrRecogResult().apply {
             val errorCode = HciCloudHwr.hciHwrRecog(it, strokes, "", this)
             if (errorCode != HciErrorCode.HCI_ERR_NONE) {
@@ -51,7 +54,7 @@ object HciHwrEngine {
         }
     }
 
-    fun associate(word: String) = workInSession(HciHwrConfiguration.Caps.ASSOCIATE) {
+    fun associate(word: String) = workInSession(Configuration.Caps.ASSOCIATE) {
         HwrAssociateWordsResult().apply {
             val errorCode = HciCloudHwr.hciHwrAssociateWords(it, word, "", this)
             if (errorCode != HciErrorCode.HCI_ERR_NONE) {
@@ -60,7 +63,7 @@ object HciHwrEngine {
         }
     }
 
-    private fun <R> workInSession(cap: HciHwrConfiguration.Caps, process: (Session) -> R): R {
+    private fun <R> workInSession(cap: Configuration.Caps, process: (Session) -> R): R {
         val session = openSession(cap)
         val result = process(session)
         HciCloudHwr.hciHwrSessionStop(session)
@@ -68,7 +71,7 @@ object HciHwrEngine {
     }
 
     @Throws(HciSessionException::class)
-    private fun openSession(cap: HciHwrConfiguration.Caps) = Session().apply {
+    private fun openSession(cap: Configuration.Caps) = Session().apply {
         val sessionConfig = HwrConfig().apply {
             addParam(HwrConfig.SessionConfig.PARAM_KEY_CAP_KEY, cap.capKey)
         }
@@ -146,6 +149,29 @@ object HciHwrEngine {
         }.let { HciCloudHwr.hciHwrInit(it.stringConfig) }
         if (errCode != HciErrorCode.HCI_ERR_NONE) {
             throw HciHwrInitException(errCode)
+        }
+    }
+
+    class Configuration
+    constructor(
+            context: Context,
+            developerKey: String,
+            appKey: String,
+            val additionalParams: MutableMap<String, String> = mutableMapOf()
+    ) {
+        val authFilePath = context.filesDir.absolutePath
+        var cloudUrl = "http://api.hcicloud.com:8888"
+        val dataPath = (Environment.getExternalStorageDirectory().absolutePath + File.separator
+                + "sinovoice" + File.separator
+                + context.packageName + File.separator
+                + "data" + File.separator)
+        val initCapKeys = Caps.values().joinToString(";") { it.capKey }
+        var developerKey by Preference(context, "com.github.charleslzq.hrw.developerKey", developerKey)
+        var appKey by Preference(context, "com.github.charleslzq.hrw.appKey", appKey)
+
+        enum class Caps(val capKey: String) {
+            FREE_STYLUS("hwr.local.freestylus"),
+            ASSOCIATE("hwr.local.associateword");
         }
     }
 }
