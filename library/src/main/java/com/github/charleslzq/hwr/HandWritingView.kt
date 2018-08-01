@@ -18,7 +18,7 @@ constructor(
         attributeSet: AttributeSet? = null,
         defStyle: Int = 0
 ) : ImageView(context, attributeSet, defStyle) {
-    private val publisher = PublishSubject.create<HwrRecogResult>()
+    private val publisher = PublishSubject.create<List<Candidate>>()
     private val strokes = UndoSupport<Stroke>()
     private var currentStroke: Stroke? = null
     val paint = Paint().apply {
@@ -67,7 +67,7 @@ constructor(
         invalidate()
     }
 
-    fun subscribe(handler: (HwrRecogResult) -> Unit) {
+    fun subscribe(handler: (List<Candidate>) -> Unit) {
         publisher.subscribe(handler)
     }
 
@@ -82,12 +82,18 @@ constructor(
 
     @Throws(HciRecogFailException::class, HciSessionException::class)
     private fun recognize() {
-        publisher.onNext(HciHwrEngine.recognize(strokes.toShort()))
+        publisher.onNext(HciHwrEngine.recognize(strokes.toShort()).toCandidates())
     }
 
     private fun UndoSupport<Stroke>.toShort() = doneList().toMutableList().apply {
         add(Stroke.EndStroke)
     }.flatMap { it.points }.flatMap { listOf(it.x.toShort(), it.y.toShort()) }.toShortArray()
+
+    private fun HwrRecogResult.toCandidates() = resultItemList.map {
+        RecognizeCandidate(it.result) {
+            reset()
+        }
+    }
 
     class Stroke {
         val points = mutableListOf<Point>()
