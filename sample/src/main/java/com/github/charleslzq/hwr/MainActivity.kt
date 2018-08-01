@@ -12,6 +12,7 @@ class MainActivity : AppCompatActivity() {
         candidates.link(hwrView)
         candidates.subscribe {
             text.append(it)
+            updateButtonState()
         }
         hwrView.subscribe {
             updateButtonState()

@@ -22,7 +22,10 @@ constructor(
         handWritingView.subscribe {
             removeAllViewsInLayout()
             it.forEach {
-                CandidateButton(context, it, onSelect).apply {
+                CandidateButton(context, it) {
+                    removeAllViewsInLayout()
+                    onSelect(it)
+                }.apply {
                     customButton(this)
                 }.also {
                     addView(it)
