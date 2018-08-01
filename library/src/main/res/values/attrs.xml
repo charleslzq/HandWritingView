@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="HandWritingView">
+        <attr name="preTextLength" format="integer" />
+        <attr name="enableAssociates" format="boolean" />
+    </declare-styleable>
+</resources>

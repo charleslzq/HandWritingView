@@ -7,6 +7,7 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
+import com.github.charleslzq.hwv.R
 import com.github.charleslzq.hwview.support.UndoSupport
 import com.sinovoice.hcicloudsdk.common.hwr.HwrRecogResult
 import io.reactivex.subjects.PublishSubject
@@ -22,7 +23,8 @@ constructor(
     private val publisher = PublishSubject.create<List<Candidate>>()
     private val strokes = UndoSupport<Stroke>()
     private var currentStroke: Stroke? = null
-    val showAssociate = true
+    var enableAssociate = true
+    var preTextLength = 3
     val paint = Paint().apply {
         color = Color.BLACK
         strokeWidth = 3f
@@ -32,6 +34,13 @@ constructor(
     }
 
     init {
+        attributeSet?.let {
+            context.obtainStyledAttributes(it, R.styleable.HandWritingView, defStyle, 0).apply {
+                enableAssociate = getBoolean(R.styleable.HandWritingView_enableAssociates, true)
+                preTextLength = getInt(R.styleable.HandWritingView_preTextLength, 3)
+                recycle()
+            }
+        }
         setOnTouchListener(StrokeListener {
             currentStroke = it
             if (it.finished) {
@@ -69,8 +78,14 @@ constructor(
         invalidate()
     }
 
-    fun subscribe(handler: (List<Candidate>) -> Unit) {
+    fun onResult(handler: (List<Candidate>) -> Unit) {
         publisher.subscribe(handler)
+    }
+
+    fun onResult(resultHandler: ResultHandler) {
+        publisher.subscribe {
+            resultHandler.receive(it)
+        }
     }
 
     override fun onDraw(canvas: Canvas) {
@@ -97,7 +112,7 @@ constructor(
 
     private fun HwrRecogResult.toCandidates() = resultItemList.map {
         RecognizeCandidate(it.result) {
-            if (showAssociate) {
+            if (enableAssociate) {
                 generateAssociates(it)
             }
             reset()
@@ -105,7 +120,7 @@ constructor(
     }
 
     private fun generateAssociates(context: Pair<String, String>) {
-        val preText = (context.first + context.second).takeLast(3)
+        val preText = (context.first + context.second).takeLast(preTextLength)
         publisher.onNext(try {
             HciHwrEngine.associate(preText).resultList.map {
                 AssociateCandidate(preText, it, this::generateAssociates)
@@ -169,6 +184,10 @@ constructor(
             }
             return true
         }
+    }
+
+    interface ResultHandler {
+        fun receive(candidates: List<Candidate>)
     }
 
     companion object {

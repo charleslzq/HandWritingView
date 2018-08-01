@@ -10,11 +10,11 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         candidates.link(hwrView)
-        candidates.subscribe {
+        candidates.onCandidateSelected {
             text.append(it)
             updateButtonState()
         }
-        hwrView.subscribe {
+        hwrView.onResult {
             updateButtonState()
         }
         resetButton.setOnClickListener {
