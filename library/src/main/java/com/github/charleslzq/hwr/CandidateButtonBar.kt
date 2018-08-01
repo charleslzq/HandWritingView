@@ -47,6 +47,10 @@ constructor(
         }
     }
 
+    fun clear() {
+        removeAllViewsInLayout()
+    }
+
     fun onCandidateSelected(handler: (String) -> Unit) {
         onSelect = handler
     }

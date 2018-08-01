@@ -25,6 +25,7 @@ object HciHwrEngine {
         private set
 
     @JvmOverloads
+    @JvmStatic
     fun setup(context: Context,
               developerKey: String,
               appKey: String,
@@ -39,11 +40,13 @@ object HciHwrEngine {
         }
     }
 
+    @JvmStatic
     fun release() {
         HciCloudHwr.hciHwrRelease()
         HciCloudSys.hciRelease()
     }
 
+    @JvmStatic
     @Throws(HciRecogFailException::class, HciSessionException::class)
     fun recognize(strokes: ShortArray) = workInSession(Configuration.Caps.FREE_STYLUS) {
         HwrRecogResult().apply {
@@ -54,6 +57,8 @@ object HciHwrEngine {
         }
     }
 
+    @JvmStatic
+    @Throws(HciAssociateFailException::class, HciSessionException::class)
     fun associate(word: String) = workInSession(Configuration.Caps.ASSOCIATE) {
         HwrAssociateWordsResult().apply {
             val errorCode = HciCloudHwr.hciHwrAssociateWords(it, "", word, this)

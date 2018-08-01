@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         }
         resetButton.setOnClickListener {
             text.text = ""
+            candidates.clear()
             hwrView.reset()
             updateButtonState()
         }
