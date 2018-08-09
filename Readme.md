@@ -37,29 +37,29 @@ HciHwrEngine还有两个方法，recognize和associate， 分别用于识别笔�
 用户在它上面的触摸轨迹保留下来，并在每次用户手指离开时（写完一画时）将轨迹数据交给识别引擎处理，可以通过
 如下方式获取识别结果：
 
-    handWritingView.onResult(new HandWritingView.ResultHandler() {
+    handWritingView.onCandidatesAvailable(new HandWritingView.ResultHandler() {
                 @Override
                 public void receive(@NotNull List<? extends Candidate> candidates) {
                     //处理识别出的候选字列表
                 }
             });
 
-如果和CandidateButtonBar配合使用的话，也不需要直接使用该接口。
-该组件提供了两个配置项：
-1. enableAssociates, 是否开启联想功能，开启后它会将每次用户选择的候选词(及其前面的词，如果有的话)发送给灵云引擎，获取后续的候选词，默认为true
-2. preTextLength， 最大前缀长度，每次送给灵云引擎进行联想的字符串的最大长度，默认为3
-
 #### 选字
-在合适的位置使用com.github.charleslzq.hwr.CandidateButtonBar，并在对应activity的onCreate方法中加入如下代码，以让其接受来自HandWritingView的候选
-字并生成相应的选字按钮：
+HandWritingView所返回的Candidate对象包含了选字所需要的所有信息和方法。它所对应的字存储在content字段里，
+而当用户选取Candidate对应的字时，调用其select方法即可。用户所选择的字会通过HandWritingView的回调接口发送过来：
 
-    candidateButtonBar.link(handWritingView);
-
-与HandWritingView类似，当用户选择某个候选词后，它会通过回调将用户所选择的词发送过来：
-
-    candidateButtonBar.onCandidateSelected(new CandidateButtonBar.CandidateHandler() {
+    handWritingView.onCandidateSelected(new CandidateButtonBar.CandidateHandler() {
                 @Override
                 public void selected(@NotNull String content) {
                     //处理用户选择的词
                 }
             });
+
+Candidate还有一个bind方法，用来将其与一个Button绑定。该方法实际上将Button的text设为它的content，
+并设置Button的OnClickListener，使其在被点击时调用它的select方法。最简单的用法如下所示：
+
+    for (Candidate candidate: candidates) {
+        Button button = new Button(candidatesBar.getContext());
+        candidate.bind(button);
+        candidatesBar.addView(button);
+    }
