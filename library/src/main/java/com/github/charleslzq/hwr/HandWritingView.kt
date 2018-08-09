@@ -23,6 +23,7 @@ constructor(
     private val publisher = PublishSubject.create<List<Candidate>>()
     private val strokes = UndoSupport<Stroke>()
     private var currentStroke: Stroke? = null
+    private var onSelect: (String) -> Unit = {}
     var preTextLength = 3
     val paint = Paint().apply {
         color = Color.BLACK
@@ -76,13 +77,23 @@ constructor(
         invalidate()
     }
 
-    fun onResult(handler: (List<Candidate>) -> Unit) {
+    fun onCandidatesAvailable(handler: (List<Candidate>) -> Unit) {
         publisher.subscribe(handler)
     }
 
-    fun onResult(resultHandler: ResultHandler) {
+    fun onCandidatesAvailable(resultHandler: ResultHandler) {
         publisher.subscribe {
             resultHandler.receive(it)
+        }
+    }
+
+    fun onCandidateSelected(handler: (String) -> Unit) {
+        onSelect = handler
+    }
+
+    fun onCandidateSelected(candidateHandler: CandidateHandler) {
+        onSelect = {
+            candidateHandler.selected(it)
         }
     }
 
@@ -117,6 +128,7 @@ constructor(
     }
 
     private fun generateAssociates(context: Pair<String, String>) {
+        onSelect(context.second)
         val preText = (context.first + context.second).takeLast(preTextLength)
         publisher.onNext(try {
             HciHwrEngine.associate(preText).resultList.map {
@@ -184,6 +196,10 @@ constructor(
 
     interface ResultHandler {
         fun receive(candidates: List<Candidate>)
+    }
+
+    interface CandidateHandler {
+        fun selected(content: String)
     }
 
     companion object {

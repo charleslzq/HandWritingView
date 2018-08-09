@@ -12,11 +12,13 @@
         android:layout_height="0dp"
         android:layout_weight="5" />
 
-    <com.github.charleslzq.hwr.CandidateButtonBar
+    <LinearLayout
         android:id="@+id/candidates"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="5" />
+        android:layout_weight="5"
+        android:orientation="horizontal"
+        />
 
     <com.github.charleslzq.hwr.HandWritingView
         android:id="@+id/hwrView"
