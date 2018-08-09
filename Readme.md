@@ -16,7 +16,7 @@
 
     dependencies {
         // 其它依赖
-        implementation 'com.github.charleslzq:hand-writing-view:1.0.0'
+        implementation 'com.github.charleslzq:hand-writing-view:1.0.1-RC1'
     }
 
 #### 初始化

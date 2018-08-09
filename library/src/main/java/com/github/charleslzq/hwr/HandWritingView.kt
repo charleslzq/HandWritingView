@@ -189,20 +189,16 @@ constructor(
         private var currentStroke = Stroke()
 
         override fun onTouch(view: View, motionEvent: MotionEvent): Boolean {
-            when (motionEvent.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    currentStroke = Stroke()
-                    currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt())
-                    onStroke(currentStroke)
-                }
-                MotionEvent.ACTION_MOVE -> {
-                    currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt())
-                    onStroke(currentStroke)
-                }
-                MotionEvent.ACTION_UP -> {
-                    currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt(), true)
-                    onStroke(currentStroke)
-                }
+            repeat(motionEvent.historySize) {
+                currentStroke.addPoint(
+                        motionEvent.getHistoricalX(it).toInt(),
+                        motionEvent.getHistoricalY(it).toInt()
+                )
+            }
+            currentStroke.addPoint(motionEvent.x.toInt(), motionEvent.y.toInt(), motionEvent.action == MotionEvent.ACTION_UP)
+            onStroke(currentStroke)
+            if (motionEvent.action == MotionEvent.ACTION_UP) {
+                currentStroke = Stroke()
             }
             return true
         }
