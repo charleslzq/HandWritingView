@@ -7,9 +7,13 @@ import android.util.Log
 import android.view.MotionEvent
 import android.view.View
 import android.widget.ImageView
+import com.github.charleslzq.hwr.support.callOnCompute
+import com.github.charleslzq.hwr.support.runOnCompute
+import com.github.charleslzq.hwr.support.runOnUI
 import com.github.charleslzq.hwv.R
 import com.github.charleslzq.hwview.support.UndoSupport
 import com.sinovoice.hcicloudsdk.common.hwr.HwrRecogResult
+import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.subjects.PublishSubject
 
 
@@ -78,22 +82,26 @@ constructor(
     }
 
     fun onCandidatesAvailable(handler: (List<Candidate>) -> Unit) {
-        publisher.subscribe(handler)
+        publisher.observeOn(AndroidSchedulers.mainThread()).subscribe(handler)
     }
 
-    fun onCandidatesAvailable(resultHandler: ResultHandler) {
-        publisher.subscribe {
-            resultHandler.receive(it)
-        }
+    fun onCandidatesAvailable(resultHandler: ResultHandler) = onCandidatesAvailable {
+        resultHandler.receive(it)
     }
 
     fun onCandidateSelected(handler: (String) -> Unit) {
-        onSelect = handler
+        onSelect = {
+            runOnUI {
+                handler(it)
+            }
+        }
     }
 
     fun onCandidateSelected(candidateHandler: CandidateHandler) {
         onSelect = {
-            candidateHandler.selected(it)
+            runOnUI {
+                candidateHandler.selected(it)
+            }
         }
     }
 
@@ -107,13 +115,13 @@ constructor(
         }
     }
 
-    private fun recognize() {
-        publisher.onNext(try {
+    private fun recognize() = publish {
+        try {
             HciHwrEngine.recognize(strokes.toShort()).toCandidates()
         } catch (exception: HciException) {
             Log.e(TAG, "error code: ${exception.errorCode}", exception)
             emptyList<RecognizeCandidate>()
-        })
+        }
     }
 
     private fun UndoSupport<Stroke>.toShort() = doneList().toMutableList().apply {
@@ -130,14 +138,20 @@ constructor(
     private fun generateAssociates(context: Pair<String, String>) {
         onSelect(context.second)
         val preText = (context.first + context.second).takeLast(preTextLength)
-        publisher.onNext(try {
-            HciHwrEngine.associate(preText).resultList.map {
-                AssociateCandidate(preText, it, this::generateAssociates)
+        publish {
+            try {
+                HciHwrEngine.associate(preText).resultList.map {
+                    AssociateCandidate(preText, it, this::generateAssociates)
+                }
+            } catch (exception: HciException) {
+                Log.e(TAG, "error code: ${exception.errorCode}", exception)
+                emptyList<AssociateCandidate>()
             }
-        } catch (exception: HciException) {
-            Log.e(TAG, "error code: ${exception.errorCode}", exception)
-            emptyList<AssociateCandidate>()
-        })
+        }
+    }
+
+    private fun publish(generateData: () -> List<Candidate>) = runOnCompute {
+        publisher.onNext(generateData())
     }
 
     class Stroke {
