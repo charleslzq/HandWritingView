@@ -23,7 +23,6 @@ constructor(
     private val publisher = PublishSubject.create<List<Candidate>>()
     private val strokes = UndoSupport<Stroke>()
     private var currentStroke: Stroke? = null
-    var enableAssociate = true
     var preTextLength = 3
     val paint = Paint().apply {
         color = Color.BLACK
@@ -36,7 +35,6 @@ constructor(
     init {
         attributeSet?.let {
             context.obtainStyledAttributes(it, R.styleable.HandWritingView, defStyle, 0).apply {
-                enableAssociate = getBoolean(R.styleable.HandWritingView_enableAssociates, true)
                 preTextLength = getInt(R.styleable.HandWritingView_preTextLength, 3)
                 recycle()
             }
@@ -89,11 +87,12 @@ constructor(
     }
 
     override fun onDraw(canvas: Canvas) {
+        super.onDraw(canvas)
         strokes.doneList().forEach {
-            canvas.drawPath(it.toPath(), paint)
+            canvas.drawPath(it.path, paint)
         }
         currentStroke?.let {
-            canvas.drawPath(it.toPath(), paint)
+            canvas.drawPath(it.path, paint)
         }
     }
 
@@ -112,9 +111,7 @@ constructor(
 
     private fun HwrRecogResult.toCandidates() = resultItemList.map {
         RecognizeCandidate(it.result) {
-            if (enableAssociate) {
-                generateAssociates(it)
-            }
+            generateAssociates(it)
             reset()
         }
     }
@@ -135,21 +132,20 @@ constructor(
         val points = mutableListOf<Point>()
         var finished = false
             private set
+        val path = Path()
 
         @JvmOverloads
         fun addPoint(x: Int, y: Int, last: Boolean = false) {
+            if (path.isEmpty) {
+                path.moveTo(x.toFloat(), y.toFloat())
+            } else {
+                path.lineTo(x.toFloat(), y.toFloat())
+            }
             if (!finished) {
                 points.add(Point(x, y))
                 if (last) {
                     finished = true
                 }
-            }
-        }
-
-        fun toPath() = Path().apply {
-            moveTo(points[0].x.toFloat(), points[0].y.toFloat())
-            repeat(points.size - 1) {
-                lineTo(points[it + 1].x.toFloat(), points[it + 1].y.toFloat())
             }
         }
 
